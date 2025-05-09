@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Profile Downloader",
+  "short_name": "LinkedOut",
+  "version": "1.0.0",
+  "description": "Download LinkedIn profiles as JSON format for easy data portability and analysis",
+  "icons": {
+    "16": "linkedin.png",
+    "32": "linkedin.png",
+    "128": "linkedin.png",
+    "512": "linkedin.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "linkedin.png",
+      "32": "linkedin.png"
+    },
+    "default_popup": "popup.html"
+  },
+  "author": "Shravan MR",
+  "minimum_chrome_version": "88",
+  "permissions": ["activeTab", "storage", "downloads", "tabs", "scripting"],
+  "host_permissions": ["*://*.linkedin.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["*://*.linkedin.com/in/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+}
