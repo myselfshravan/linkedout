@@ -18,7 +18,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 // Function to update extension state based on current tab
 async function updateExtensionState(tab) {
-  if (tab.url?.includes('linkedin.com/in/')) {
+  if (tab.url?.includes("linkedin.com/in/")) {
     chrome.action.enable(tab.id);
   } else {
     chrome.action.disable(tab.id);
@@ -37,25 +37,59 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
 
     case "extractProfile":
+      console.log("Received extractProfile message in background");
       chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+        console.log("Current tab:", tab);
         if (tab?.id) {
-          chrome.tabs.sendMessage(tab.id, { action: "extractProfile" }, (response) => {
-            if (response?.success) {
-              const profileData = response.data;
-              
-              // Create blob and trigger download
-              const blob = new Blob([JSON.stringify(profileData, null, 2)], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              const filename = `${profileData.name.replace(/\s+/g, '_').toLowerCase()}_linkedin_profile.json`;
-              
-              chrome.downloads.download({
-                url: url,
-                filename: filename,
-                saveAs: true
-              });
+          console.log("Sending extractProfile message to content script");
+          chrome.tabs.sendMessage(
+            tab.id,
+            { action: "extractProfile" },
+            (response) => {
+              console.log("Received response from content script:", response);
+              if (response?.success) {
+                const profileData = response.data;
+                console.log(
+                  "Processing profile data for download:",
+                  profileData
+                );
+
+                // Convert data to base64 and trigger download
+                const jsonString = JSON.stringify(profileData, null, 2);
+                const base64Data = btoa(
+                  unescape(encodeURIComponent(jsonString))
+                );
+                const dataUrl = `data:application/json;base64,${base64Data}`;
+                // Create filename with fallback if name is not available
+                const filename = profileData.name
+                  ? `${profileData.name
+                      .replace(/\s+/g, "_")
+                      .toLowerCase()}_linkedin_profile.json`
+                  : `linkedin_profile_${
+                      new Date().toISOString().split("T")[0]
+                    }.json`;
+
+                chrome.downloads.download(
+                  {
+                    url: dataUrl,
+                    filename: filename,
+                    saveAs: true,
+                  },
+                  (downloadId) => {
+                    if (chrome.runtime.lastError) {
+                      console.error(
+                        "Download error:",
+                        chrome.runtime.lastError
+                      );
+                    } else {
+                      console.log("Download started with ID:", downloadId);
+                    }
+                  }
+                );
+              }
+              sendResponse(response);
             }
-            sendResponse(response);
-          });
+          );
         }
       });
       return true;
