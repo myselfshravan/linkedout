@@ -2,16 +2,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const statusDiv = document.getElementById("status");
   const extractButton = document.getElementById("extractProfile");
   const previewDiv = document.getElementById("preview");
-
-  console.log("Popup script started");
+  const nameDiv = document.getElementById("profileName");
+  const aboutDiv = document.getElementById("profileAbout");
+  const featuredDiv = document.getElementById("profileFeatured");
 
   // Check if we're on a LinkedIn profile page
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  console.log("Current tab:", tab);
-
   if (!tab?.url?.includes("linkedin.com/in/")) {
-    console.log("Not on a LinkedIn profile page");
-    statusDiv.textContent = "Please navigate to a LinkedIn profile page";
+    statusDiv.innerHTML = '<div class="error">Please navigate to a LinkedIn profile page</div>';
     extractButton.disabled = true;
     return;
   }
@@ -19,52 +17,82 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Handle profile extraction
   extractButton.addEventListener("click", async () => {
     try {
-      console.log("Extract button clicked");
-      statusDiv.textContent = "Extracting profile data...";
+      statusDiv.innerHTML = '<div class="info">Extracting profile data...</div>';
       extractButton.disabled = true;
 
       // Request profile extraction
-      console.log("Sending extractProfile message to background script");
-      const response = await chrome.runtime.sendMessage({
+      const response = await chrome.tabs.sendMessage(tab.id, {
         action: "extractProfile",
       });
-      console.log("Received response from background:", response);
 
       if (response?.success) {
-        // Show success message
-        statusDiv.innerHTML = `
-          <div class="success">Profile data extracted successfully!</div>
-          <div class="info">The JSON file will download automatically.</div>
-        `;
-
-        // Show preview of extracted data
-        const previewData = {
-          name: response.data.name,
-          headline: response.data.headline,
-          experience: `${response.data.experience?.length || 0} entries`,
-          education: `${response.data.education?.length || 0} entries`,
-          skills: `${response.data.skills?.length || 0} skills`,
-        };
-
-        previewDiv.innerHTML = `
-          <div class="preview-header">Data Preview:</div>
-          <div class="preview-content">
-            <div><strong>Name:</strong> ${previewData.name}</div>
-            <div><strong>Headline:</strong> ${previewData.headline}</div>
-            <div><strong>Experience:</strong> ${previewData.experience}</div>
-            <div><strong>Education:</strong> ${previewData.education}</div>
-            <div><strong>Skills:</strong> ${previewData.skills}</div>
+        const { data } = response;
+        
+        // Display name and headline
+        nameDiv.innerHTML = `
+          <h3>Profile Info</h3>
+          <div class="content">
+            <div class="item"><strong>${data.name}</strong></div>
+            ${data.headline ? `<div class="item">${data.headline}</div>` : ''}
+            ${data.location ? `<div class="item">${data.location}</div>` : ''}
           </div>
         `;
+
+        // Display about section
+        if (data.about) {
+          aboutDiv.innerHTML = `
+            <h3>About</h3>
+            <div class="content">${data.about}</div>
+          `;
+        }
+
+        // Display featured posts
+        if (data.featured && data.featured.length > 0) {
+          const featuredContent = data.featured
+            .map(post => `
+              <div class="featured-item">
+                <div class="title">${post.title}</div>
+                ${post.description ? `<div class="description">${post.description}</div>` : ''}
+              </div>
+            `)
+            .join('');
+
+          featuredDiv.innerHTML = `
+            <h3>Featured</h3>
+            <div class="content">
+              ${featuredContent}
+            </div>
+          `;
+        }
+
+        // Add download button
+        const downloadButton = document.createElement('button');
+        downloadButton.className = 'download-btn';
+        downloadButton.textContent = 'Download Profile Data';
+        downloadButton.onclick = () => {
+          const blob = new Blob([JSON.stringify(data, null, 2)], { 
+            type: 'application/json' 
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${data.name.replace(/\s+/g, '_')}_profile.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        };
+        
+        statusDiv.innerHTML = '<div class="success">Profile data extracted successfully!</div>';
+        extractButton.parentNode.appendChild(downloadButton);
+
       } else {
-        console.error("Extraction failed:", response?.error);
         throw new Error(response?.error || "Failed to extract profile data");
       }
     } catch (error) {
-      console.error("Error in popup:", error);
+      console.error("Error:", error);
       statusDiv.innerHTML = `<div class="error">${error.message}</div>`;
     } finally {
-      console.log("Extraction process completed");
       extractButton.disabled = false;
     }
   });

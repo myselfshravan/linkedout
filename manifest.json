@@ -19,17 +19,15 @@
   },
   "author": "Shravan MR",
   "minimum_chrome_version": "88",
-  "permissions": ["activeTab", "storage", "downloads", "tabs", "scripting"],
-  "host_permissions": ["*://*.linkedin.com/*"],
-  "content_scripts": [
-    {
-      "matches": ["*://*.linkedin.com/in/*"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
+  "permissions": [
+    "activeTab",
+    "storage",
+    "downloads",
+    "tabs",
+    "scripting"
   ],
+  "host_permissions": ["*://*.linkedin.com/*"],
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   }
 }

@@ -1,60 +1,80 @@
+// Content script for LinkedIn Profile Extractor
 (() => {
+  // Function to safely extract text content
+  function extractText(element) {
+    return element ? element.textContent.trim() : '';
+  }
+
+  // Function to extract profile data
   async function extractProfileData() {
     try {
-      console.log("Starting profile data extraction...");
+      // Wait for content to load
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Wait for dynamic content to load
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Extract name
+      const nameElement = document.querySelector('.text-heading-xlarge');
+      const name = extractText(nameElement);
 
-      // Get all visually-hidden spans not inside aside elements
-      const textBlocks = Array.from(
-        document.querySelectorAll("span.visually-hidden")
-      )
-        .filter((span) => !span.closest("aside"))
-        .map((span) => span.textContent.trim())
-        .filter((text) => text.length > 0);
+      // Extract about section
+      const aboutSection = document.getElementById('about');
+      let about = '';
+      if (aboutSection) {
+        // Look for the text content within the about section
+        const aboutText = aboutSection.querySelector('.display-flex.ph5.pv3 .inline-show-more-text');
+        about = extractText(aboutText);
+      }
 
-      console.log("Found text blocks:", textBlocks);
+      // Extract featured posts
+      const featuredSection = document.getElementById('featured');
+      let featured = [];
+      if (featuredSection) {
+        const featuredList = featuredSection.querySelector('.pvs-list__outer-container');
+        if (featuredList) {
+          const items = featuredList.querySelectorAll('.artdeco-list__item');
+          items.forEach(item => {
+            const title = extractText(item.querySelector('.optional-action-target-wrapper'));
+            const description = extractText(item.querySelector('.pvs-list__subtitle-item'));
+            if (title) {
+              featured.push({
+                title,
+                description: description || ''
+              });
+            }
+          });
+        }
+      }
 
-      const profile = {
-        name: textBlocks
-          .find((text) => text.includes(" has a "))
-          ?.split(" has a ")[0],
-        headline: textBlocks.find((text) =>
-          text.includes("Sales Development Manager")
-        ),
-        about: textBlocks.find((text) => text.includes("Over the years")),
-        skills:
-          textBlocks
-            .find((text) => text.includes("Sales Development •"))
-            ?.split(" • ") || [],
-        services:
-          textBlocks
-            .find((text) => text.includes("Lead Generation •"))
-            ?.split(" • ") || [],
-        timestamp: new Date().toISOString(),
-        url: window.location.href,
+      // Additional profile info
+      const headline = extractText(document.querySelector('.text-body-medium'));
+      const location = extractText(document.querySelector('.text-body-small.inline'));
+
+      // Compile the data
+      const profileData = {
+        name,
+        headline,
+        location,
+        about,
+        featured
       };
 
-      console.log("Extracted profile:", profile);
-      return profile;
+      return {
+        success: true,
+        data: profileData
+      };
+
     } catch (error) {
-      console.error("Error extracting profile data:", error);
-      throw new Error("Failed to extract profile data");
+      console.error('Extraction error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
+  // Listen for extraction request
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "extractProfile") {
-      (async () => {
-        try {
-          const profileData = await extractProfileData();
-          sendResponse({ success: true, data: profileData });
-        } catch (error) {
-          console.error("Error in profile extraction:", error);
-          sendResponse({ success: false, error: error.message });
-        }
-      })();
+    if (message.action === 'extractProfile') {
+      extractProfileData().then(sendResponse);
       return true;
     }
   });
