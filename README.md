@@ -1,52 +1,32 @@
-# CosmosDB _ts Converter
+# LinkedIn Profile Downloader (LinkedOut)
 
-A Chrome extension that converts Azure Cosmos DB `_ts` timestamps to human-readable IST (Indian Standard Time) format directly in the Azure portal.
+A Chrome extension that allows you to download LinkedIn profiles as JSON format for easy data portability and analysis.
 
 ## Features
 
-- 🕒 Converts Unix timestamps to IST format with date and time
-- ⏰ Shows relative time (e.g., "5 minutes ago")
-- 📋 Works with clipboard content
-- 📝 Maintains conversion history (last 50 entries)
-- 🎯 Simple one-click conversion
-- 🔄 Real-time updates
-- 🎨 Clean, modern UI with toast notifications
+- � Download LinkedIn profile data as JSON files
+- 🎯 Simple one-click download from LinkedIn profile pages
+- � Extracts comprehensive profile information
+- 🔄 Real-time data capture from active tabs
+- 🎨 Clean and intuitive user interface
+- 💾 Saves data using Chrome Downloads API for easy access
 
 ## How It Works
 
-The extension adds a persistent "Convert Copied _ts" button in the Azure portal. When clicked, it:
+The extension adds a convenient download option on LinkedIn profile pages. When activated, it:
 
-1. Reads the clipboard content
-2. Extracts timestamps using various patterns:
-   - `_ts` fields in JSON
-   - URL parameters
-   - Plain Unix timestamps (10 or 13 digits)
-3. Converts the timestamp to IST
-4. Displays a toast notification with:
-   - Original timestamp
-   - Converted date/time
-   - Relative time
+1. Captures profile data from the current LinkedIn page
+2. Formats the data into a structured JSON file
+3. Initiates a download of the JSON file to your device
+4. Provides feedback on the download status
 
 ## Technical Implementation
 
-- Uses Manifest V3
-- Content script injects UI elements and handles conversions
-- Implements debouncing for better performance
-- Features a robust timestamp extraction system
-- Stores conversion history using Chrome Storage API
-- Modern toast notification system for feedback
-
-### Timestamp Detection Patterns
-
-The extension can detect timestamps in various formats:
-```javascript
-- "_ts": 1234567890
-- '_ts': 1234567890
-- _ts=1234567890
-- timestamp=1234567890
-- Plain 10-digit Unix timestamps
-- Plain 13-digit Unix timestamps
-```
+- Uses Manifest V3 for modern Chrome extension architecture
+- Content script injects UI elements and extracts profile data
+- Background service worker handles permissions and tab management
+- Utilizes Chrome Storage API for settings or temporary data
+- Implements downloads API for saving JSON files
 
 ## Installation
 
@@ -57,19 +37,21 @@ The extension can detect timestamps in various formats:
 
 ## Usage
 
-1. Copy any text containing a CosmosDB timestamp
-2. Click the "Convert Copied _ts" button in the bottom-right corner
-3. View the converted timestamp in IST format
+1. Navigate to a LinkedIn profile page
+2. Click the LinkedIn Profile Downloader icon in the Chrome toolbar
+3. Click the download button in the popup to capture and save the profile data
+4. Check your downloads folder for the JSON file containing the profile information
 
-The extension works automatically on Azure portal pages and provides instant feedback through toast notifications.
+The extension works automatically on LinkedIn pages and provides instant feedback through the popup interface.
 
 ## Permissions
 
-- `activeTab`: For accessing page content
-- `storage`: For saving conversion history
-- `clipboardRead`: For reading clipboard content
-- `contextMenus`: For right-click menu options
+- `activeTab`: For accessing the current LinkedIn page content
+- `storage`: For saving settings or temporary data
+- `downloads`: For saving profile data as JSON files
+- `tabs`: For managing tab interactions
 - `scripting`: For dynamic script injection
+- Host permissions for `*://*.linkedin.com/*`: To operate on LinkedIn domains
 
 ## Author
 
